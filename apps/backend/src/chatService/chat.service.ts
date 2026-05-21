@@ -1,9 +1,10 @@
+import { randomUUID } from 'crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { Session } from '../entities/session.entity';
 import { Message } from '../entities/message.entity';
-import { LlmService } from '../llmService/llm.service';
+import { LlmService, IngestionContext } from '../llmService/llm.service';
 import type { ChatMessage } from '../llmService/base-llm.interface';
 import type {
   CreateSessionDto,
@@ -114,10 +115,20 @@ export class ChatService {
       });
     }
 
+    const assistantMessageId = randomUUID();
+    const ingestionContext: IngestionContext = {
+      messageId: assistantMessageId,
+      sessionId: dto.sessionId,
+      provider: session.provider,
+      inputPreview: dto.message.slice(0, 200),
+    };
+
     let fullResponse = '';
     for await (const chunk of this.llmService.stream(
       session.provider,
       messages,
+      undefined,
+      ingestionContext,
     )) {
       fullResponse += chunk;
       yield chunk;
@@ -125,6 +136,7 @@ export class ChatService {
 
     await this.messageRepository.save(
       this.messageRepository.create({
+        id: assistantMessageId,
         sessionId: dto.sessionId,
         role: 'llm',
         content: fullResponse,

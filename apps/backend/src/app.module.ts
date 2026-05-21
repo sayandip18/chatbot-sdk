@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { ChatModule } from './chatService/chat.module';
 import { Message } from './entities/message.entity';
 import { Session } from './entities/session.entity';
+import { LlmInsight } from './entities/llm-insight.entity';
 import { LlmModule } from './llmService/llm.module';
 
 @Module({
@@ -21,7 +22,7 @@ import { LlmModule } from './llmService/llm.module';
         username: config.get<string>('DB_USERNAME', 'postgres'),
         password: config.get<string>('DB_PASSWORD', 'postgres'),
         database: config.get<string>('DB_NAME', 'chatbot'),
-        entities: [Session, Message],
+        entities: [Session, Message, LlmInsight],
         synchronize: true,
       }),
     }),
