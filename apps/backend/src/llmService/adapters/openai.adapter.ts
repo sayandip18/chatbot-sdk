@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { BaseLLM, StreamOptions } from '../base-llm.interface';
+import { BaseLLM, ChatMessage, StreamOptions } from '../base-llm.interface';
 
 export class OpenAIAdapter implements BaseLLM {
   private client: OpenAI;
@@ -9,14 +9,14 @@ export class OpenAIAdapter implements BaseLLM {
   }
 
   async *stream(
-    prompt: string,
+    messages: ChatMessage[],
     options: StreamOptions = {},
   ): AsyncIterable<string> {
     const { model = 'gpt-4o-mini', temperature, maxTokens } = options;
 
     const completion = await this.client.chat.completions.create({
       model,
-      messages: [{ role: 'user', content: prompt }],
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
       stream: true,
       ...(temperature !== undefined && { temperature }),
       ...(maxTokens !== undefined && { max_tokens: maxTokens }),

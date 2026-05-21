@@ -4,6 +4,11 @@ export interface StreamOptions {
   maxTokens?: number;
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
 export interface BaseLLM {
-  stream(prompt: string, options?: StreamOptions): AsyncIterable<string>;
+  stream(messages: ChatMessage[], options?: StreamOptions): AsyncIterable<string>;
 }

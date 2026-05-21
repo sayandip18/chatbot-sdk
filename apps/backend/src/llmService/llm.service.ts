@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { LlmFactory } from './llm.factory';
-import { StreamOptions } from './base-llm.interface';
+import { ChatMessage, StreamOptions } from './base-llm.interface';
 
 @Injectable()
 export class LlmService {
@@ -8,10 +8,10 @@ export class LlmService {
 
   stream(
     provider: string,
-    prompt: string,
+    messages: ChatMessage[],
     options?: StreamOptions,
   ): AsyncIterable<string> {
     const client = this.factory.getClient(provider);
-    return client.stream(prompt, options);
+    return client.stream(messages, options);
   }
 }

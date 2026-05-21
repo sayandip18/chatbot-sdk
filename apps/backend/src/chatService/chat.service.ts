@@ -1,15 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { Session } from '../entities/session.entity';
 import { Message } from '../entities/message.entity';
 import { LlmService } from '../llmService/llm.service';
+import type { ChatMessage } from '../llmService/base-llm.interface';
 import type {
   CreateSessionDto,
   IMessage,
   ISession,
   PostChatDto,
 } from '@app/types';
+
+const CONTEXT_WINDOW = 10;
 
 @Injectable()
 export class ChatService {
@@ -89,10 +92,32 @@ export class ChatService {
       }),
     );
 
+    const systemMessage = await this.messageRepository.findOne({
+      where: { sessionId: dto.sessionId, role: 'system' },
+    });
+
+    const recentMessages = await this.messageRepository.find({
+      where: { sessionId: dto.sessionId, role: Not('system') },
+      order: { createdAt: 'DESC' },
+      take: CONTEXT_WINDOW,
+    });
+    recentMessages.reverse();
+
+    const messages: ChatMessage[] = [];
+    if (systemMessage) {
+      messages.push({ role: 'system', content: systemMessage.content });
+    }
+    for (const m of recentMessages) {
+      messages.push({
+        role: m.role === 'llm' ? 'assistant' : m.role,
+        content: m.content,
+      });
+    }
+
     let fullResponse = '';
     for await (const chunk of this.llmService.stream(
       session.provider,
-      dto.message,
+      messages,
     )) {
       fullResponse += chunk;
       yield chunk;
