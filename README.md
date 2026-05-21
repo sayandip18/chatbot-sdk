@@ -45,6 +45,49 @@ pnpm dev
 | Frontend    | http://localhost:5173 |
 | Backend API | http://localhost:3000 |
 
+## Architecture
+
+```
+[User Browser]
+   │
+   │ 1. Send Message
+   ▼
+[Chatbot App Server]
+   │
+   ├─► 2. Save Message to DB immediately (Status: Pending)
+   │
+   ├─► 3. Call LLM API (Stream or Unary)
+   │     │
+   │     └─► 4. Stream tokens back to User & Append to DB (Status: Success)
+   │
+   └─► 5. (BACKGROUND / FIRE-AND-FORGET)
+          SDK extracts metadata -> Fires to Ingestion API -> Publishes to Queue
+```
+
+```
+[Chat App + SDK]
+       │
+       ▼
+[Ingestion API] ──(Write)──> [Insights DB]
+       │
+       │ (Publish Event: "log.received")
+       ▼
+ ┌───────────────┐
+ │  Message Bus  │ (Redis Streams)
+ └───────┬───────┘
+         │
+         ├───────────────────────────────┬──────────────────────────────┐
+         ▼                               ▼                              ▼
+ ┌───────────────┐               ┌───────────────┐              ┌───────────────┐
+ │ PII Redactor  │               │ Metrics Agg.  │              │ Insight Engine│
+ └───────┬───────┘               └───────┬───────┘              └───────┬───────┘
+         │ (Masks Data)                  │ (Increments Counters)        │ (Async LLM/Eval)
+         ▼                               ▼                              ▼
+┌─────────────────┐             ┌─────────────────┐            ┌─────────────────┐
+│  Messages DB    │             │  TimeSeries DB  │            │  Analytics DB   │
+└─────────────────┘             └─────────────────┘            └─────────────────┘
+```
+
 ## Ingestion Service
 
 Every LLM turn is automatically logged to the `llm_insights` table — no extra configuration required. The table is created on first boot via TypeORM `synchronize: true`.
