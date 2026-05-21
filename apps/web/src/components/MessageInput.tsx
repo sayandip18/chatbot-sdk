@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@app/ui';
+import { useState } from 'react';
+import { Send } from 'lucide-react';
+import { Button, Input } from '@app/ui';
 
 interface MessageInputProps {
   onSend: (message: string) => void;
@@ -7,16 +8,8 @@ interface MessageInputProps {
   placeholder?: string;
 }
 
-export function MessageInput({ onSend, disabled = false, placeholder = 'Message...' }: MessageInputProps) {
+export function MessageInput({ onSend, disabled = false, placeholder = 'Enter your query' }: MessageInputProps) {
   const [value, setValue] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-  }, [value]);
 
   const submit = () => {
     const trimmed = value.trim();
@@ -33,29 +26,24 @@ export function MessageInput({ onSend, disabled = false, placeholder = 'Message.
   };
 
   return (
-    <div className="border-t border-zinc-800 bg-[#0a0a0a] px-4 py-4">
-      <div className="mx-auto flex max-w-2xl items-end gap-3 rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3">
-        <textarea
-          ref={textareaRef}
-          rows={1}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={placeholder}
-          disabled={disabled}
-          className="flex-1 resize-none bg-transparent text-sm text-white placeholder-zinc-500 outline-none disabled:opacity-50"
-          style={{ minHeight: '24px' }}
-        />
-        <Button
-          variant="primary"
-          onClick={submit}
-          disabled={!value.trim() || disabled}
-          loading={disabled}
-          className="shrink-0 px-3 py-1.5 text-xs"
-        >
-          {disabled ? '' : 'Send'}
-        </Button>
-      </div>
+    <div className="sticky bottom-0 bg-white flex flex-row gap-4 w-full justify-between p-0.5">
+      <Input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={onKeyDown}
+        className="w-full"
+        placeholder={placeholder}
+        disabled={disabled}
+      />
+      <Button
+        loading={disabled}
+        Icon={Send}
+        variant="outline"
+        className="h-10 w-10 shrink-0"
+        onClick={submit}
+        disabled={!value.trim() || disabled}
+      />
     </div>
   );
 }

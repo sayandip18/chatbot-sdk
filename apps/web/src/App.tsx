@@ -17,7 +17,7 @@ function AppShell() {
     >
       <Routes>
         <Route path="/" element={<NewChatPage onSessionCreated={reload} />} />
-        <Route path="/chat/:sessionId" element={<ChatPage onSessionsChange={reload} />} />
+        <Route path="/chat/:sessionId" element={<ChatPage onSessionsChange={reload} sessions={sessions} />} />
       </Routes>
     </Layout>
   );

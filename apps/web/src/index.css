@@ -1,23 +1,29 @@
 @import "tailwindcss";
-@source "../../../packages/ui/src";
+@source "../../../packages/ui/src/**";
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@theme {
+  --color-foreground: oklch(0.15 0 0);
 }
 
-body {
-  background: #0a0a0a;
-  color: #ffffff;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-#root {
-  height: 100vh;
-  display: flex;
+  body {
+    background: white;
+    color: oklch(0.15 0 0);
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #root {
+    height: 100vh;
+    display: flex;
+  }
 }

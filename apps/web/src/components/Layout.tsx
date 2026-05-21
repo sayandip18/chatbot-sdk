@@ -1,4 +1,15 @@
-import { Sidebar } from './Sidebar';
+import { useNavigate } from 'react-router-dom';
+import {
+  MainPage,
+  HubSection,
+  Button,
+  Spinner,
+  cn,
+  BodySmMedium20,
+  LabelXsMedium16,
+  BodySmRegular20,
+} from '@app/ui';
+import { MessageSquare, Plus } from 'lucide-react';
 import type { SessionWithLabel } from '../hooks/useSessions';
 
 interface LayoutProps {
@@ -9,16 +20,49 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-export function Layout({ sessions, sessionsLoading, activeSessionId, onSessionsChange, children }: LayoutProps) {
+export function Layout({ sessions, sessionsLoading, activeSessionId, children }: LayoutProps) {
+  const navigate = useNavigate();
+
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#0a0a0a]">
-      <Sidebar
-        sessions={sessions}
-        loading={sessionsLoading}
-        activeSessionId={activeSessionId}
-        onSessionsChange={onSessionsChange}
-      />
-      <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
-    </div>
+    <MainPage
+      title="AI Chat"
+      actionComponent={
+        <Button Icon={Plus} onClick={() => navigate('/')}>New Chat</Button>
+      }
+    >
+      <div className="h-full flex flex-row gap-8">
+        <HubSection title="Conversations" Icon={MessageSquare}>
+          <div className="flex flex-col gap-2 p-6">
+            {sessionsLoading ? (
+              <div className="flex justify-center pt-4">
+                <Spinner size="sm" />
+              </div>
+            ) : sessions.length === 0 ? (
+              <BodySmRegular20 className="text-center text-gray-400 pt-4">
+                No conversations yet
+              </BodySmRegular20>
+            ) : (
+              sessions.map((s) => (
+                <div
+                  key={s.id}
+                  onClick={() => navigate(`/chat/${s.id}`)}
+                  className={cn(
+                    'px-4 py-2 rounded-md cursor-pointer hover:bg-slate-100',
+                    s.id === activeSessionId ? 'bg-slate-200' : 'bg-white'
+                  )}
+                >
+                  <BodySmMedium20 className="block truncate">{s.label || 'Untitled'}</BodySmMedium20>
+                  <LabelXsMedium16 className="text-gray-500 capitalize block">{s.provider}</LabelXsMedium16>
+                </div>
+              ))
+            )}
+          </div>
+        </HubSection>
+
+        <div className="flex-1 h-full overflow-hidden">
+          {children}
+        </div>
+      </div>
+    </MainPage>
   );
 }

@@ -17,17 +17,15 @@ export function MessageList({ messages, streaming }: MessageListProps) {
   const visible = messages.filter((m) => m.role !== 'system');
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-6">
-      <div className="mx-auto flex max-w-2xl flex-col gap-4">
-        {visible.map((m, i) => (
-          <MessageBubble
-            key={m.id}
-            message={m}
-            isStreaming={streaming && i === visible.length - 1 && m.role === 'llm'}
-          />
-        ))}
-        <div ref={bottomRef} />
-      </div>
+    <div className="flex-1 flex flex-col gap-4 w-full overflow-y-auto mb-2 px-1 h-full">
+      {visible.map((m, i) => (
+        <MessageBubble
+          key={m.id}
+          message={m}
+          isStreaming={streaming && i === visible.length - 1 && m.role === 'llm'}
+        />
+      ))}
+      <div ref={bottomRef} />
     </div>
   );
 }

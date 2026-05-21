@@ -1,37 +1,68 @@
 import React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import type { LucideIcon } from "lucide-react";
+import { cn } from "./lib/utils";
 
-type Variant = "primary" | "ghost";
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-40 cursor-pointer",
+  {
+    variants: {
+      variant: {
+        default: "bg-emerald-600 text-white hover:bg-emerald-700",
+        secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200",
+        outline:
+          "border border-slate-200 bg-white hover:bg-slate-50 text-slate-900",
+        ghost: "hover:bg-slate-100 text-slate-700",
+      },
+      size: {
+        default: "h-10",
+        sm: "h-8 px-3 text-xs",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  },
+);
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant;
+interface ButtonProps
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
   loading?: boolean;
+  Icon?: LucideIcon;
 }
 
-const base =
-  "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-40 cursor-pointer";
-const variants: Record<Variant, string> = {
-  primary: "bg-white text-black hover:bg-zinc-200",
-  ghost: "border border-zinc-700 text-white hover:bg-zinc-800",
-};
-
-export function Button({
-  variant = "primary",
-  loading = false,
-  children,
-  className = "",
-  disabled,
-  ...rest
-}: ButtonProps) {
-  return (
-    <button
-      className={`${base} ${variants[variant]} ${className}`}
-      disabled={disabled || loading}
-      {...rest}
-    >
-      {loading && (
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-      )}
-      {children}
-    </button>
-  );
-}
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      variant,
+      size,
+      loading = false,
+      Icon,
+      children,
+      className,
+      disabled,
+      ...rest
+    },
+    ref,
+  ) => {
+    return (
+      <button
+        ref={ref}
+        className={cn(buttonVariants({ variant, size }), className)}
+        disabled={disabled || loading}
+        {...rest}
+      >
+        {loading ? (
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        ) : Icon ? (
+          <Icon className="h-5 w-5" />
+        ) : null}
+        {children}
+      </button>
+    );
+  },
+);
+Button.displayName = "Button";

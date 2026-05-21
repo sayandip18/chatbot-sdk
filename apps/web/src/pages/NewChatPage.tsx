@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { LLMProvider } from '@app/types';
-import { Select } from '@app/ui';
+import { InfoCard, Select } from '@app/ui';
 import { createSession } from '../api/client';
 import { MessageInput } from '../components/MessageInput';
 
@@ -26,10 +26,14 @@ export function NewChatPage({ onSessionCreated }: NewChatPageProps) {
   };
 
   return (
-    <div className="flex flex-1 flex-col">
+    <InfoCard
+      title="New Conversation"
+      subtitle="Select a provider and start chatting"
+      className="w-full max-h-full h-full"
+      titleSize="xl"
+    >
       <div className="flex flex-1 items-center justify-center">
         <div className="flex flex-col items-center gap-6 text-center">
-          <h1 className="text-2xl font-semibold text-white">New Conversation</h1>
           <Select
             id="provider"
             label="Provider"
@@ -49,6 +53,6 @@ export function NewChatPage({ onSessionCreated }: NewChatPageProps) {
         disabled={sending}
         placeholder="Start typing to begin..."
       />
-    </div>
+    </InfoCard>
   );
 }
