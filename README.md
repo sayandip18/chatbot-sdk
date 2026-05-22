@@ -68,24 +68,29 @@ pnpm dev
 [Chat App + SDK]
        │
        ▼
-[Ingestion API] ──(Write)──> [Insights DB]
+[Ingestion API] ──(Write)──> [llm_insights]
        │
-       │ (Publish Event: "log.received")
-       ▼
- ┌───────────────┐
- │  Message Bus  │ (Redis Streams)
- └───────┬───────┘
-         │
-         ├───────────────────────────────┬──────────────────────────────┐
-         ▼                               ▼                              ▼
- ┌───────────────┐               ┌───────────────┐              ┌───────────────┐
- │ PII Redactor  │               │ Metrics Agg.  │              │ Insight Engine│
- └───────┬───────┘               └───────┬───────┘              └───────┬───────┘
-         │ (Masks Data)                  │ (Increments Counters)        │ (Async LLM/Eval)
-         ▼                               ▼                              ▼
-┌─────────────────┐             ┌─────────────────┐            ┌─────────────────┐
-│  Messages DB    │             │  TimeSeries DB  │            │  Analytics DB   │
-└─────────────────┘             └─────────────────┘            └─────────────────┘
+       ├── "log.received" ────────────────────────────────────────────────┐
+       └── "inference.events" ───────────────────────┐                    │
+                                                      │                    │
+                                    ┌─────────────────┴────────────────────┴───┐
+                                    │       Message Bus (Redis Streams)         │
+                                    └──────────┬──────────────────┬─────────────┘
+                                               │                  │
+                           ┌───────────────────┘                  │
+                 "inference.events"                         "log.received"
+                           │                                       │
+              ┌────────────┴────────────┐                         │
+              ▼                         ▼                          ▼
+    ┌─────────────────┐     ┌─────────────────────┐    ┌─────────────────┐
+    │  Metrics Agg.   │     │   Insight Engine    │    │  PII Redactor   │
+    └────────┬────────┘     └──────────┬──────────┘    └────────┬────────┘
+             │ 1-min rollup            │ errors only             │ mask PII
+             ▼                         ▼                          ▼
+  ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────┐
+  │ inference_metrics_   │  │  inference_errors    │  │    messages      │
+  │       rollup         │  └──────────────────────┘  └──────────────────┘
+  └──────────────────────┘
 ```
 
 ## Ingestion Service
@@ -117,6 +122,15 @@ Every LLM turn is automatically logged to the `llm_insights` table — no extra 
 3. Adapters surface real token counts via provider stream events (OpenAI `stream_options.include_usage`, Gemini `usageMetadata`).
 4. After the last chunk is yielded, `LlmService` writes the insight row — then `ChatService` persists the assistant message using the same pre-generated UUID for correlation.
 5. On stream errors, a row is still written with `status = error` and a classified `error_type`.
+6. After every write, `IngestionService` publishes an `InferenceEvent` to the `inference.events` stream (consumed by the Metrics Aggregator and Insight Engine workers). On success it additionally publishes to `log.received` for PII redaction.
+
+### Worker services
+
+| Worker | Stream | Output table | Behaviour |
+| --- | --- | --- | --- |
+| **PII Redactor** | `log.received` | `messages` | Masks emails, phone numbers, card numbers, and SSNs in assistant content, then marks the message `completed`. |
+| **Metrics Aggregator** | `inference.events` | `inference_metrics_rollup` | Accumulates all events into in-memory 1-minute buckets per provider. Flushes sealed buckets every 60 s with pre-computed P50/P90/P99 latency percentiles via an upsert on `(bucket_timestamptz, provider, model)`. |
+| **Insight Engine** | `inference.events` | `inference_errors` | Filters for `status = error` events only. Persists one row per failure with the HTTP status code, classified error type, raw message, and serialised error details for debugging. |
 
 ## Building
 

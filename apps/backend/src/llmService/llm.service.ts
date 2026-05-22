@@ -22,6 +22,29 @@ function classifyError(error: unknown): string {
   return error.name ?? 'unknown';
 }
 
+function extractHttpStatus(error: unknown): number | null {
+  if (error !== null && typeof error === 'object') {
+    const e = error as Record<string, unknown>;
+    if (typeof e['status'] === 'number') return e['status'];
+    if (typeof e['statusCode'] === 'number') return e['statusCode'];
+  }
+  return null;
+}
+
+function serializeError(error: unknown): Record<string, unknown> | null {
+  if (error === null || error === undefined) return null;
+  if (error instanceof Error) {
+    return { name: error.name, message: error.message };
+  }
+  try {
+    return JSON.parse(JSON.stringify(error)) as Record<string, unknown>;
+  } catch {
+    return {
+      raw: error instanceof Error ? error.message : JSON.stringify(error),
+    };
+  }
+}
+
 @Injectable()
 export class LlmService {
   constructor(
@@ -73,6 +96,9 @@ export class LlmService {
           ttftMs,
           status: 'success',
           errorType: null,
+          httpStatus: null,
+          errorMessage: null,
+          errorDetails: null,
           inputPreview: context.inputPreview,
           outputPreview: outputPreview.slice(0, 200),
           outputContent: outputPreview,
@@ -100,6 +126,12 @@ export class LlmService {
           ttftMs,
           status: 'error',
           errorType: classifyError(streamError),
+          httpStatus: extractHttpStatus(streamError),
+          errorMessage:
+            streamError instanceof Error
+              ? streamError.message
+              : String(streamError),
+          errorDetails: serializeError(streamError),
           inputPreview: context.inputPreview,
           outputPreview: outputPreview.slice(0, 200) || null,
           outputContent: null,

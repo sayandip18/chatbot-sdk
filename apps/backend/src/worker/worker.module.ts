@@ -2,8 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Message } from '../entities/message.entity';
+import { InferenceError } from '../entities/inference-error.entity';
+import { InferenceMetricsRollup } from '../entities/inference-metrics-rollup.entity';
 import { RedisModule } from '../redis/redis.module';
 import { PiiRedactorService } from './pii-redactor/pii-redactor.service';
+import { InsightEngineService } from './insight-engine/insight-engine.service';
+import { MetricsAggService } from './metrics-agg/metrics-agg.service';
 
 @Module({
   imports: [
@@ -18,13 +22,13 @@ import { PiiRedactorService } from './pii-redactor/pii-redactor.service';
         username: config.get<string>('DB_USERNAME', 'postgres'),
         password: config.get<string>('DB_PASSWORD', 'postgres'),
         database: config.get<string>('DB_NAME', 'chatbot'),
-        entities: [Message],
+        entities: [Message, InferenceError, InferenceMetricsRollup],
         synchronize: false,
       }),
     }),
-    TypeOrmModule.forFeature([Message]),
+    TypeOrmModule.forFeature([Message, InferenceError, InferenceMetricsRollup]),
     RedisModule,
   ],
-  providers: [PiiRedactorService],
+  providers: [PiiRedactorService, InsightEngineService, MetricsAggService],
 })
 export class WorkerModule {}

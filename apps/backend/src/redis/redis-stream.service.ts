@@ -14,7 +14,7 @@ type XReadGroupResult = [string, [string, string[]][]][] | null;
 export class RedisStreamService {
   constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
 
-  async publish(stream: string, payload: StreamEvent): Promise<void> {
+  async publish<T>(stream: string, payload: T): Promise<void> {
     await this.redis.xadd(stream, '*', 'data', JSON.stringify(payload));
   }
 
@@ -27,13 +27,13 @@ export class RedisStreamService {
     }
   }
 
-  async readGroup(
+  async readGroup<T = StreamEvent>(
     stream: string,
     group: string,
     consumer: string,
     count: number,
     blockMs: number,
-  ): Promise<Array<{ id: string; payload: StreamEvent }>> {
+  ): Promise<Array<{ id: string; payload: T }>> {
     const raw = (await this.redis.xreadgroup(
       'GROUP',
       group,
@@ -49,15 +49,13 @@ export class RedisStreamService {
 
     if (!raw) return [];
 
-    const out: Array<{ id: string; payload: StreamEvent }> = [];
+    const out: Array<{ id: string; payload: T }> = [];
     for (const [, entries] of raw) {
       for (const [id, fields] of entries) {
         const dataIdx = fields.indexOf('data');
         if (dataIdx === -1) continue;
-        out.push({
-          id,
-          payload: JSON.parse(fields[dataIdx + 1]) as StreamEvent,
-        });
+        const parsed: unknown = JSON.parse(fields[dataIdx + 1]);
+        out.push({ id, payload: parsed as T });
       }
     }
     return out;

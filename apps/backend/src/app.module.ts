@@ -7,6 +7,8 @@ import { ChatModule } from './chatService/chat.module';
 import { Message } from './entities/message.entity';
 import { Session } from './entities/session.entity';
 import { LlmInsight } from './entities/llm-insight.entity';
+import { InferenceError } from './entities/inference-error.entity';
+import { InferenceMetricsRollup } from './entities/inference-metrics-rollup.entity';
 import { LlmModule } from './llmService/llm.module';
 
 @Module({
@@ -22,7 +24,7 @@ import { LlmModule } from './llmService/llm.module';
         username: config.get<string>('DB_USERNAME', 'postgres'),
         password: config.get<string>('DB_PASSWORD', 'postgres'),
         database: config.get<string>('DB_NAME', 'chatbot'),
-        entities: [Session, Message, LlmInsight],
+        entities: [Session, Message, LlmInsight, InferenceError, InferenceMetricsRollup],
         synchronize: true,
       }),
     }),

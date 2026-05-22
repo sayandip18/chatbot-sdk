@@ -81,22 +81,27 @@ This document outlines the systematic breakdown of tasks for the Lightweight LLM
 [Chat App + SDK]
        │
        ▼
-[Ingestion API] ──(Write)──> [Insights DB]
+[Ingestion API] ──(Write)──> [llm_insights]
        │
-       │ (Publish Event: "log.received")
-       ▼
- ┌───────────────┐
- │  Message Bus  │ (Redis Streams)
- └───────┬───────┘
-         │
-         ├───────────────────────────────┬──────────────────────────────┐
-         ▼                               ▼                              ▼
- ┌───────────────┐               ┌───────────────┐              ┌───────────────┐
- │ PII Redactor  │               │ Metrics Agg.  │              │ Insight Engine│
- └───────┬───────┘               └───────┬───────┘              └───────┬───────┘
-         │ (Masks Data)                  │ (Increments Counters)        │ (Async LLM/Eval)
-         ▼                               ▼                              ▼
-┌─────────────────┐             ┌─────────────────┐            ┌─────────────────┐
-│  Messages DB    │             │  TimeSeries DB  │            │  Analytics DB   │
-└─────────────────┘             └─────────────────┘            └─────────────────┘
+       ├── "log.received" ────────────────────────────────────────────────┐
+       └── "inference.events" ───────────────────────┐                    │
+                                                      │                    │
+                                    ┌─────────────────┴────────────────────┴───┐
+                                    │       Message Bus (Redis Streams)         │
+                                    └──────────┬──────────────────┬─────────────┘
+                                               │                  │
+                           ┌───────────────────┘                  │
+                 "inference.events"                         "log.received"
+                           │                                       │
+              ┌────────────┴────────────┐                         │
+              ▼                         ▼                          ▼
+    ┌─────────────────┐     ┌─────────────────────┐    ┌─────────────────┐
+    │  Metrics Agg.   │     │   Insight Engine    │    │  PII Redactor   │
+    └────────┬────────┘     └──────────┬──────────┘    └────────┬────────┘
+             │ 1-min rollup            │ errors only             │ mask PII
+             ▼                         ▼                          ▼
+  ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────┐
+  │ inference_metrics_   │  │  inference_errors    │  │    messages      │
+  │       rollup         │  └──────────────────────┘  └──────────────────┘
+  └──────────────────────┘
 ```
