@@ -27,7 +27,7 @@ Required variables:
 
 ## Running
 
-### Production (Docker)
+### Using Docker
 
 Build and start all services — backend, worker, Postgres, Redis, and the Nginx-served frontend:
 
@@ -35,25 +35,94 @@ Build and start all services — backend, worker, Postgres, Redis, and the Nginx
 docker compose up --build
 ```
 
-| Service     | URL                  |
-| ----------- | -------------------- |
-| Frontend    | http://localhost:80  |
+| Service     | URL                   |
+| ----------- | --------------------- |
+| Frontend    | http://localhost:80   |
 | Backend API | http://localhost:3000 |
 
-### Local frontend development
+### Using Kubernetes (via Docker Desktop)
 
-For hot-reload during UI work, run only the backend services in Docker and start the Vite dev server locally:
+Requires Kubernetes enabled in Docker Desktop: **Settings → Kubernetes → Enable Kubernetes → Apply**.
+
+**1. Fill in your API keys** in [k8s/secrets.yaml](k8s/secrets.yaml) (this file is gitignored):
+
+```yaml
+stringData:
+  POSTGRES_PASSWORD: postgres
+  OPENAI_API_KEY: "your-key-here"
+  GEMINI_API_KEY: "your-key-here"
+```
+
+**2. Start a local registry** (required — Docker Desktop's Kubernetes uses containerd internally and cannot access images built with BuildKit directly from Docker's image store):
 
 ```bash
-# 1. Start backend services (skip the web container)
-docker compose up --build postgres redis backend worker
-
-# 2. Install dependencies (first time only)
-pnpm install
-
-# 3. Start the Vite dev server
-pnpm --filter web dev
+docker run -d -p 5000:5000 --restart=always --name local-registry registry:2
 ```
+
+**3. Build and push the images to the local registry:**
+
+```bash
+docker buildx build --platform linux/amd64 --load -t chatbot-sdk-backend:latest -f apps/backend/Dockerfile .
+docker buildx build --platform linux/amd64 --load -t chatbot-sdk-web:latest -f apps/web/Dockerfile .
+
+docker tag chatbot-sdk-backend:latest localhost:5000/chatbot-sdk-backend:latest
+docker tag chatbot-sdk-web:latest localhost:5000/chatbot-sdk-web:latest
+
+docker push localhost:5000/chatbot-sdk-backend:latest
+docker push localhost:5000/chatbot-sdk-web:latest
+```
+
+> The `--platform linux/amd64 --load` flags are required to produce a single-platform Docker-format image. Without them, BuildKit emits an OCI image index which containerd cannot resolve with `imagePullPolicy: Always` against a local registry.
+
+**4. Apply all manifests:**
+
+```bash
+kubectl apply -f k8s/
+```
+
+**5. Watch pods come up:**
+
+```bash
+kubectl get pods -w
+```
+
+All five pods (`postgres`, `redis`, `backend`, `worker`, `web`) should reach `Running` status. Postgres and Redis have readiness probes, so `backend` and `worker` will not start sending traffic until those are ready.
+
+**6. Access the frontend:**
+
+```bash
+kubectl port-forward svc/web 8080:80
+```
+
+Then open `http://localhost:8080`.
+
+> **WSL2 NodePort limitation:** The `web` service is a NodePort on `30080`, but Docker Desktop on Windows with a WSL2 backend does not reliably forward NodePort traffic from the Windows host to the WSL2 VM. `kubectl port-forward` bypasses this entirely and is the recommended access method for local development. Re-run the command after each terminal restart.
+
+| Service     | URL                                          |
+| ----------- | -------------------------------------------- |
+| Frontend    | http://localhost:8080 (via `port-forward`)   |
+| Backend API | via ClusterIP (internal)                     |
+
+**Updating after a code change:**
+
+```bash
+# Rebuild and push to local registry
+docker buildx build --platform linux/amd64 --load -t chatbot-sdk-backend:latest -f apps/backend/Dockerfile .
+docker tag chatbot-sdk-backend:latest localhost:5000/chatbot-sdk-backend:latest
+docker push localhost:5000/chatbot-sdk-backend:latest
+
+# Roll out the new image
+kubectl rollout restart deployment/backend
+kubectl rollout restart deployment/worker
+```
+
+**Tear down:**
+
+```bash
+kubectl delete -f k8s/
+```
+
+> **Note:** Deleting the manifests also removes the `PersistentVolumeClaim` for Postgres, which destroys the database volume. To keep data between redeploys, omit `postgres.yaml` from the delete command or remove only the Deployment/Service objects.
 
 | Service     | URL                   |
 | ----------- | --------------------- |
@@ -143,9 +212,8 @@ Every LLM turn is automatically logged to the `llm_insights` table — no extra 
 
 ### Worker services
 
-| Worker | Stream | Output table | Behaviour |
-| --- | --- | --- | --- |
-| **PII Redactor** | `log.received` | `messages` | Masks emails, phone numbers, card numbers, and SSNs in assistant content, then marks the message `completed`. |
+| Worker                 | Stream             | Output table               | Behaviour                                                                                                                                                                                                          |
+| ---------------------- | ------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **PII Redactor**       | `log.received`     | `messages`                 | Masks emails, phone numbers, card numbers, and SSNs in assistant content, then marks the message `completed`.                                                                                                      |
 | **Metrics Aggregator** | `inference.events` | `inference_metrics_rollup` | Accumulates all events into in-memory 1-minute buckets per provider. Flushes sealed buckets every 60 s with pre-computed P50/P90/P99 latency percentiles via an upsert on `(bucket_timestamptz, provider, model)`. |
-| **Insight Engine** | `inference.events` | `inference_errors` | Filters for `status = error` events only. Persists one row per failure with the HTTP status code, classified error type, raw message, and serialised error details for debugging. |
-
+| **Insight Engine**     | `inference.events` | `inference_errors`         | Filters for `status = error` events only. Persists one row per failure with the HTTP status code, classified error type, raw message, and serialised error details for debugging.                                  |

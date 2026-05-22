@@ -50,6 +50,9 @@ apps/api/.swc/
 .env.production.local
 *.env
 
+# Kubernetes secrets (contains API keys)
+k8s/secrets.yaml
+
 # ==============================================================================
 # 5. OS & IDE SPECIFIC
 # ==============================================================================
