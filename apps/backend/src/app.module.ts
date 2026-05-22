@@ -10,6 +10,7 @@ import { LlmInsight } from './entities/llm-insight.entity';
 import { InferenceError } from './entities/inference-error.entity';
 import { InferenceMetricsRollup } from './entities/inference-metrics-rollup.entity';
 import { LlmModule } from './llmService/llm.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { LlmModule } from './llmService/llm.module';
     }),
     LlmModule,
     ChatModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

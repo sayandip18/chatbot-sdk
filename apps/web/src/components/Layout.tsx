@@ -9,7 +9,7 @@ import {
   LabelXsMedium16,
   BodySmRegular20,
 } from '@app/ui';
-import { MessageSquare, Plus } from 'lucide-react';
+import { MessageSquare, Plus, LayoutDashboard } from 'lucide-react';
 import type { SessionWithLabel } from '../hooks/useSessions';
 
 interface LayoutProps {
@@ -27,7 +27,10 @@ export function Layout({ sessions, sessionsLoading, activeSessionId, children }:
     <MainPage
       title="AI Chat"
       actionComponent={
-        <Button Icon={Plus} onClick={() => navigate('/')}>New Chat</Button>
+        <div className="flex gap-2">
+          <Button Icon={LayoutDashboard} variant="outline" onClick={() => navigate('/dashboard')}>Dashboard</Button>
+          <Button Icon={Plus} onClick={() => navigate('/')}>New Chat</Button>
+        </div>
       }
     >
       <div className="h-full flex flex-row gap-8">
