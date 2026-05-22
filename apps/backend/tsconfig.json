@@ -15,7 +15,7 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "@app/types": ["../types/index.ts"]
+      "@app/types": ["../types/index.d.ts"]
     },
     "incremental": true,
     "skipLibCheck": true,

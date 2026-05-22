@@ -92,8 +92,8 @@ export function DashboardPage() {
                 />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip
-                  labelFormatter={formatTime}
-                  formatter={(v: number) => [`${v} ms`, 'TTFT']}
+                  labelFormatter={(label) => formatTime(label as string)}
+                  formatter={(v) => [`${v as number} ms`, 'TTFT']}
                 />
                 <Line
                   type="monotone"
@@ -119,7 +119,7 @@ export function DashboardPage() {
                   tick={{ fontSize: 11 }}
                 />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip labelFormatter={formatTime} formatter={(v: number) => [`${v} ms`]} />
+                <Tooltip labelFormatter={(label) => formatTime(label as string)} formatter={(v) => [`${v as number} ms`]} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line type="monotone" dataKey="p50LatencyMs" stroke="#3b82f6" dot={false} strokeWidth={2} name="p50" connectNulls />
                 <Line type="monotone" dataKey="p90LatencyMs" stroke="#f59e0b" dot={false} strokeWidth={2} name="p90" connectNulls />
@@ -139,7 +139,7 @@ export function DashboardPage() {
                   tick={{ fontSize: 11 }}
                 />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip labelFormatter={formatTime} formatter={(v: number) => [v, 'Requests']} />
+                <Tooltip labelFormatter={(label) => formatTime(label as string)} formatter={(v) => [v as number, 'Requests']} />
                 <Bar dataKey="totalRequests" fill="#3b82f6" name="Requests" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -156,7 +156,7 @@ export function DashboardPage() {
                   tick={{ fontSize: 11 }}
                 />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip labelFormatter={formatTime} formatter={(v: number) => [`${v} tok/s`]} />
+                <Tooltip labelFormatter={(label) => formatTime(label as string)} formatter={(v) => [`${v as number} tok/s`]} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line type="monotone" dataKey="inputTps" stroke="#10b981" dot={false} strokeWidth={2} name="Input" />
                 <Line type="monotone" dataKey="outputTps" stroke="#06b6d4" dot={false} strokeWidth={2} name="Output" />
@@ -176,8 +176,8 @@ export function DashboardPage() {
                 />
                 <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
                 <Tooltip
-                  labelFormatter={formatTime}
-                  formatter={(v: number) => [`${v}%`, 'Error Rate']}
+                  labelFormatter={(label) => formatTime(label as string)}
+                  formatter={(v) => [`${v as number}%`, 'Error Rate']}
                 />
                 <Line
                   type="monotone"
@@ -197,7 +197,7 @@ export function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="category" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip formatter={(v: number) => [v, 'Errors']} />
+                <Tooltip formatter={(v) => [v as number, 'Errors']} />
                 <Bar dataKey="count" fill="#f87171" name="Errors" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

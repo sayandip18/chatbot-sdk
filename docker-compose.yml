@@ -48,8 +48,17 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 2>&1 | grep -q . || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   worker:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
     image: chatbot-sdk-backend
     command: ["node", "dist/main-worker"]
     environment:
@@ -75,7 +84,8 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres_data:

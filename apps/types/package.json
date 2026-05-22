@@ -1,12 +1,12 @@
 {
   "name": "@app/types",
   "version": "0.0.1",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./index.d.ts",
+  "types": "./index.d.ts",
   "exports": {
     ".": {
-      "types": "./index.ts",
-      "default": "./index.ts"
+      "types": "./index.d.ts",
+      "default": "./index.d.ts"
     }
   }
 }

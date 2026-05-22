@@ -4,8 +4,9 @@ RUN npm install -g pnpm@10.30.3
 FROM base AS builder
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/web/package.json ./apps/web/
+COPY apps/backend/package.json ./apps/backend/
 COPY apps/types/package.json ./apps/types/
 COPY packages/ui/package.json ./packages/ui/
 

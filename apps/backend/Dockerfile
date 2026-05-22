@@ -4,9 +4,11 @@ RUN npm install -g pnpm@10.30.3
 FROM base AS builder
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/types/package.json ./apps/types/
+COPY apps/web/package.json ./apps/web/
+COPY packages/ui/package.json ./packages/ui/
 
 RUN pnpm install --frozen-lockfile
 
@@ -14,8 +16,7 @@ COPY apps/backend ./apps/backend
 COPY apps/types ./apps/types
 
 RUN pnpm --filter backend build && \
-    pnpm --filter backend exec nest build --entryFile main-worker && \
-    pnpm --filter backend deploy --prod /app/deploy
+    pnpm --filter backend deploy --legacy --prod /app/deploy
 
 FROM base AS runner
 WORKDIR /app

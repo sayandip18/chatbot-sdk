@@ -2,48 +2,65 @@ Chatbot Insight Extractor
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+
-- [pnpm](https://pnpm.io/) 10+
-- PostgreSQL running locally (default: `localhost:5432`, database `chatbot`)
+- [Docker](https://www.docker.com/) and Docker Compose
+- [Node.js](https://nodejs.org/) 20+ and [pnpm](https://pnpm.io/) 10+ (for local frontend development)
 
 ## Setup
 
-1. Install dependencies:
+Copy the environment file and fill in your API keys:
 
-   ```bash
-   pnpm install
-   ```
+```bash
+cp .env.example .env
+```
 
-2. Copy the environment file and fill in your API keys:
+Required variables:
 
-   ```bash
-   cp .env.example .env
-   ```
-
-   Required variables:
-
-   | Variable         | Description                             |
-   | ---------------- | --------------------------------------- |
-   | `OPENAI_API_KEY` | OpenAI API key                          |
-   | `GEMINI_API_KEY` | Google Gemini API key                   |
-   | `DB_HOST`        | Postgres host (default: `localhost`)    |
-   | `DB_PORT`        | Postgres port (default: `5432`)         |
-   | `DB_USERNAME`    | Postgres user (default: `postgres`)     |
-   | `DB_PASSWORD`    | Postgres password (default: `postgres`) |
-   | `DB_NAME`        | Database name (default: `chatbot`)      |
+| Variable         | Description                             |
+| ---------------- | --------------------------------------- |
+| `OPENAI_API_KEY` | OpenAI API key                          |
+| `GEMINI_API_KEY` | Google Gemini API key                   |
+| `DB_HOST`        | Postgres host (default: `localhost`)    |
+| `DB_PORT`        | Postgres port (default: `5432`)         |
+| `DB_USERNAME`    | Postgres user (default: `postgres`)     |
+| `DB_PASSWORD`    | Postgres password (default: `postgres`) |
+| `DB_NAME`        | Database name (default: `chatbot`)      |
 
 ## Running
 
-Start both the backend and frontend in watch mode:
+### Production (Docker)
+
+Build and start all services — backend, worker, Postgres, Redis, and the Nginx-served frontend:
 
 ```bash
-pnpm dev
+docker compose up --build
+```
+
+| Service     | URL                  |
+| ----------- | -------------------- |
+| Frontend    | http://localhost:80  |
+| Backend API | http://localhost:3000 |
+
+### Local frontend development
+
+For hot-reload during UI work, run only the backend services in Docker and start the Vite dev server locally:
+
+```bash
+# 1. Start backend services (skip the web container)
+docker compose up --build postgres redis backend worker
+
+# 2. Install dependencies (first time only)
+pnpm install
+
+# 3. Start the Vite dev server
+pnpm --filter web dev
 ```
 
 | Service     | URL                   |
 | ----------- | --------------------- |
 | Frontend    | http://localhost:5173 |
 | Backend API | http://localhost:3000 |
+
+The Vite dev server proxies `/api` requests to `http://localhost:3000`, so no extra configuration is needed.
 
 ## Architecture
 
@@ -132,8 +149,3 @@ Every LLM turn is automatically logged to the `llm_insights` table — no extra 
 | **Metrics Aggregator** | `inference.events` | `inference_metrics_rollup` | Accumulates all events into in-memory 1-minute buckets per provider. Flushes sealed buckets every 60 s with pre-computed P50/P90/P99 latency percentiles via an upsert on `(bucket_timestamptz, provider, model)`. |
 | **Insight Engine** | `inference.events` | `inference_errors` | Filters for `status = error` events only. Persists one row per failure with the HTTP status code, classified error type, raw message, and serialised error details for debugging. |
 
-## Building
-
-```bash
-pnpm build
-```

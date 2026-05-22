@@ -32,6 +32,7 @@ export function useChat(sessionId: string | null) {
         sessionId,
         role: 'user',
         content,
+        status: 'pending',
         createdAt: new Date(),
       };
       const placeholderMsg: IMessage = {
@@ -39,6 +40,7 @@ export function useChat(sessionId: string | null) {
         sessionId,
         role: 'llm',
         content: '',
+        status: 'pending',
         createdAt: new Date(),
       };
 
