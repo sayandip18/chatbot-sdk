@@ -27,6 +27,17 @@ Required variables:
 
 ## Running
 
+### Local Frontend Development
+
+With the backend already running (via Docker or locally), start the Vite dev server:
+
+```bash
+pnpm install
+pnpm --filter web dev
+```
+
+The dev server starts at `http://localhost:5173` and proxies `/api` requests to `http://localhost:3000`, so no extra configuration is needed.
+
 ### Using Docker
 
 Build and start all services — backend, worker, Postgres, Redis, and the Nginx-served frontend:
@@ -37,7 +48,7 @@ docker compose up --build
 
 | Service     | URL                   |
 | ----------- | --------------------- |
-| Frontend    | http://localhost:80   |
+| Frontend    | http://localhost:5173 |
 | Backend API | http://localhost:3000 |
 
 ### Using Kubernetes (via Docker Desktop)
@@ -128,8 +139,6 @@ kubectl delete -f k8s/
 | ----------- | --------------------- |
 | Frontend    | http://localhost:5173 |
 | Backend API | http://localhost:3000 |
-
-The Vite dev server proxies `/api` requests to `http://localhost:3000`, so no extra configuration is needed.
 
 ## Architecture
 
