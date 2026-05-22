@@ -75,6 +75,7 @@ export class LlmService {
           errorType: null,
           inputPreview: context.inputPreview,
           outputPreview: outputPreview.slice(0, 200),
+          outputContent: outputPreview,
           requestedAt,
           respondedAt: new Date(),
         });
@@ -101,6 +102,7 @@ export class LlmService {
           errorType: classifyError(streamError),
           inputPreview: context.inputPreview,
           outputPreview: outputPreview.slice(0, 200) || null,
+          outputContent: null,
           requestedAt,
           respondedAt: new Date(),
         });

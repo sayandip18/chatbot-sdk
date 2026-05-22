@@ -57,3 +57,46 @@ This document outlines the systematic breakdown of tasks for the Lightweight LLM
 
 - **Task 6.1:** Write the comprehensive `README.md` containing setup instructions and architecture notes.
 - **Task 6.2:** Document schema design decisions, focusing on indexing strategies for fast telemetry queries.
+
+## 7. Architecture
+
+```
+[User Browser]
+   │
+   │ 1. Send Message
+   ▼
+[Chatbot App Server]
+   │
+   ├─► 2. Save Message to DB immediately (Status: Pending)
+   │
+   ├─► 3. Call LLM API (Stream or Unary)
+   │     │
+   │     └─► 4. Stream tokens back to User & Append to DB (Status: Success)
+   │
+   └─► 5. (BACKGROUND / FIRE-AND-FORGET)
+          SDK extracts metadata -> Fires to Ingestion API -> Publishes to Queue
+```
+
+```
+[Chat App + SDK]
+       │
+       ▼
+[Ingestion API] ──(Write)──> [Insights DB]
+       │
+       │ (Publish Event: "log.received")
+       ▼
+ ┌───────────────┐
+ │  Message Bus  │ (Redis Streams)
+ └───────┬───────┘
+         │
+         ├───────────────────────────────┬──────────────────────────────┐
+         ▼                               ▼                              ▼
+ ┌───────────────┐               ┌───────────────┐              ┌───────────────┐
+ │ PII Redactor  │               │ Metrics Agg.  │              │ Insight Engine│
+ └───────┬───────┘               └───────┬───────┘              └───────┬───────┘
+         │ (Masks Data)                  │ (Increments Counters)        │ (Async LLM/Eval)
+         ▼                               ▼                              ▼
+┌─────────────────┐             ┌─────────────────┐            ┌─────────────────┐
+│  Messages DB    │             │  TimeSeries DB  │            │  Analytics DB   │
+└─────────────────┘             └─────────────────┘            └─────────────────┘
+```

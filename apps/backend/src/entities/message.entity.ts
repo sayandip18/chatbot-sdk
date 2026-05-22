@@ -27,6 +27,9 @@ export class Message {
   @Column({ type: 'text' })
   content: string;
 
+  @Column({ type: 'varchar', length: 20, default: 'pending' })
+  status: 'pending' | 'completed';
+
   @CreateDateColumn()
   createdAt: Date;
 }

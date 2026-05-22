@@ -14,6 +14,7 @@ COPY apps/backend ./apps/backend
 COPY apps/types ./apps/types
 
 RUN pnpm --filter backend build && \
+    pnpm --filter backend exec nest build --entryFile main-worker && \
     pnpm --filter backend deploy --prod /app/deploy
 
 FROM base AS runner

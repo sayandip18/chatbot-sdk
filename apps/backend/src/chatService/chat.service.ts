@@ -5,6 +5,7 @@ import { Not, Repository } from 'typeorm';
 import { Session } from '../entities/session.entity';
 import { Message } from '../entities/message.entity';
 import { LlmService, IngestionContext } from '../llmService/llm.service';
+import { RedisStreamService } from '../redis/redis-stream.service';
 import type { ChatMessage } from '../llmService/base-llm.interface';
 import type {
   CreateSessionDto,
@@ -23,6 +24,7 @@ export class ChatService {
     @InjectRepository(Message)
     private readonly messageRepository: Repository<Message>,
     private readonly llmService: LlmService,
+    private readonly redisStream: RedisStreamService,
   ) {}
 
   async createSession(dto: CreateSessionDto): Promise<ISession> {
@@ -35,6 +37,7 @@ export class ChatService {
           sessionId: saved.id,
           role: 'system',
           content: dto.systemPrompt,
+          status: 'completed',
         }),
       );
     }
@@ -80,18 +83,28 @@ export class ChatService {
       sessionId: m.sessionId,
       role: m.role,
       content: m.content,
+      status: m.status,
       createdAt: m.createdAt,
     }));
   }
 
   async *streamChat(dto: PostChatDto, session: Session): AsyncIterable<string> {
-    await this.messageRepository.save(
+    // 1. Save user message as pending and publish to PII pipeline
+    const userMsg = await this.messageRepository.save(
       this.messageRepository.create({
         sessionId: dto.sessionId,
         role: 'user',
         content: dto.message,
+        status: 'pending',
       }),
     );
+
+    await this.redisStream.publish('log.received', {
+      messageId: userMsg.id,
+      sessionId: dto.sessionId,
+      role: 'user',
+      content: dto.message,
+    });
 
     const systemMessage = await this.messageRepository.findOne({
       where: { sessionId: dto.sessionId, role: 'system' },
@@ -115,7 +128,18 @@ export class ChatService {
       });
     }
 
+    // 2. Pre-save LLM placeholder so the row exists before ingestion publishes the event
     const assistantMessageId = randomUUID();
+    await this.messageRepository.save(
+      this.messageRepository.create({
+        id: assistantMessageId,
+        sessionId: dto.sessionId,
+        role: 'llm',
+        content: '',
+        status: 'pending',
+      }),
+    );
+
     const ingestionContext: IngestionContext = {
       messageId: assistantMessageId,
       sessionId: dto.sessionId,
@@ -123,24 +147,21 @@ export class ChatService {
       inputPreview: dto.message.slice(0, 200),
     };
 
-    let fullResponse = '';
-    for await (const chunk of this.llmService.stream(
-      session.provider,
-      messages,
-      undefined,
-      ingestionContext,
-    )) {
-      fullResponse += chunk;
-      yield chunk;
+    // 3. Stream — ingestionService will publish the LLM event with full content on success.
+    //    PII redactor owns the final content write; we do NOT update the message here.
+    try {
+      for await (const chunk of this.llmService.stream(
+        session.provider,
+        messages,
+        undefined,
+        ingestionContext,
+      )) {
+        yield chunk;
+      }
+    } catch (error) {
+      // Clean up orphaned placeholder on stream failure
+      await this.messageRepository.delete(assistantMessageId);
+      throw error;
     }
-
-    await this.messageRepository.save(
-      this.messageRepository.create({
-        id: assistantMessageId,
-        sessionId: dto.sessionId,
-        role: 'llm',
-        content: fullResponse,
-      }),
-    );
   }
 }

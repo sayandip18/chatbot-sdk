@@ -13,6 +13,7 @@ export interface IMessage {
   sessionId: string;
   role: MessageRole;
   content: string;
+  status: 'pending' | 'completed';
   createdAt: Date;
 }
 

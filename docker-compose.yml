@@ -15,10 +15,21 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "6379:6379"
+
   backend:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
+    image: chatbot-sdk-backend
     environment:
       PORT: 3000
       DB_HOST: postgres
@@ -26,6 +37,8 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_NAME: chatbot
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
     ports:
@@ -33,6 +46,27 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: chatbot-sdk-backend
+    command: ["node", "dist/main-worker"]
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: chatbot
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
 
   web:
     build:
