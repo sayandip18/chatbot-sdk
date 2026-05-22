@@ -14,11 +14,11 @@ export class Message {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', name: 'session_id' })
   sessionId: string;
 
   @ManyToOne(() => Session, (session) => session.messages)
-  @JoinColumn({ name: 'sessionId' })
+  @JoinColumn({ name: 'session_id' })
   session: Session;
 
   @Column({ type: 'varchar', length: 10 })
@@ -30,6 +30,6 @@ export class Message {
   @Column({ type: 'varchar', length: 20, default: 'pending' })
   status: 'pending' | 'completed';
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

@@ -3,7 +3,8 @@
     "allow": [
       "Bash(pnpm add *)",
       "Bash(docker build *)",
-      "Bash(docker run *)"
+      "Bash(docker run *)",
+      "Bash(node -e \"console.log\\(require\\('./apps/web/node_modules/react/package.json'\\).version\\)\")"
     ]
   }
 }

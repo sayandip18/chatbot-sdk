@@ -1,25 +1,22 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import type { IMessage } from '@app/types';
-import { getMessages, streamChat } from '../api/client';
+import { useState, useCallback, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { IMessage } from "@app/types";
+import { getMessages, streamChat } from "../api/client";
 
 export function useChat(sessionId: string | null) {
-  const [messages, setMessages] = useState<IMessage[]>([]);
+  const queryClient = useQueryClient();
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingMessages, setPendingMessages] = useState<IMessage[]>([]);
   const abortRef = useRef(false);
 
-  const loadHistory = useCallback(async (id: string) => {
-    const msgs = await getMessages(id);
-    setMessages(msgs);
-  }, []);
+  const { data: history = [] } = useQuery({
+    queryKey: ["messages", sessionId],
+    queryFn: () => getMessages(sessionId!),
+    enabled: !!sessionId,
+  });
 
-  useEffect(() => {
-    if (!sessionId) {
-      setMessages([]);
-      return;
-    }
-    loadHistory(sessionId);
-  }, [sessionId, loadHistory]);
+  const messages = [...history, ...pendingMessages];
 
   const send = useCallback(
     async (content: string) => {
@@ -30,41 +27,45 @@ export function useChat(sessionId: string | null) {
       const userMsg: IMessage = {
         id: crypto.randomUUID(),
         sessionId,
-        role: 'user',
+        role: "user",
         content,
-        status: 'pending',
+        status: "pending",
         createdAt: new Date(),
       };
       const placeholderMsg: IMessage = {
         id: crypto.randomUUID(),
         sessionId,
-        role: 'llm',
-        content: '',
-        status: 'pending',
+        role: "llm",
+        content: "",
+        status: "pending",
         createdAt: new Date(),
       };
 
-      setMessages((prev) => [...prev, userMsg, placeholderMsg]);
+      setPendingMessages([userMsg, placeholderMsg]);
       setStreaming(true);
 
       try {
         for await (const chunk of streamChat(sessionId, content)) {
           if (abortRef.current) break;
-          setMessages((prev) => {
+          setPendingMessages((prev) => {
             const copy = [...prev];
             const last = copy[copy.length - 1];
-            copy[copy.length - 1] = { ...last, content: last.content + chunk };
+            copy[copy.length - 1] = { ...last, content: last?.content + chunk };
             return copy;
           });
         }
+        await queryClient.invalidateQueries({
+          queryKey: ["messages", sessionId],
+        });
+        await queryClient.invalidateQueries({ queryKey: ["sessions"] });
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Unknown error');
-        setMessages((prev) => prev.slice(0, -1));
+        setError(e instanceof Error ? e.message : "Unknown error");
       } finally {
+        setPendingMessages([]);
         setStreaming(false);
       }
     },
-    [sessionId, streaming],
+    [sessionId, streaming, queryClient],
   );
 
   return { messages, streaming, error, send };

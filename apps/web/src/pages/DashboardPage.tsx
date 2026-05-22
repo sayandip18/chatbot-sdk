@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   LineChart,
   Line,
@@ -47,13 +48,22 @@ function ChartCard({
 export function DashboardPage() {
   const [range, setRange] = useState<Range>('1h');
   const { metrics, errors, loading, error } = useDashboard(range);
+  const navigate = useNavigate();
 
   const ts = metrics?.timeSeries ?? [];
   const interval = tickInterval(ts);
 
   return (
     <InfoCard title="Dashboard" className="w-full max-h-full h-full overflow-auto">
-      <div className="flex gap-2 mb-6">
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back to Chat
+        </button>
+        <div className="flex gap-2">
         {RANGES.map((r) => (
           <button
             key={r}
@@ -68,6 +78,7 @@ export function DashboardPage() {
             {r}
           </button>
         ))}
+        </div>
       </div>
 
       {error && (

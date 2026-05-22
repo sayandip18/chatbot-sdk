@@ -10,10 +10,10 @@ export class InferenceError {
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
   timestamp: Date;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', name: 'conversation_id' })
   conversationId: string;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ type: 'uuid', nullable: true, name: 'request_id' })
   requestId: string | null;
 
   @Column({ type: 'varchar', length: 50 })
@@ -22,18 +22,18 @@ export class InferenceError {
   @Column({ type: 'varchar', length: 100, default: 'unknown' })
   model: string;
 
-  @Column({ type: 'varchar', length: 50 })
+  @Column({ type: 'varchar', length: 50, name: 'error_type' })
   errorType: string;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ type: 'int', nullable: true, name: 'http_status' })
   httpStatus: number | null;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', name: 'error_message' })
   errorMessage: string;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'jsonb', nullable: true, name: 'error_details' })
   errorDetails: Record<string, unknown> | null;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'jsonb', nullable: true, name: 'request_snapshot' })
   requestSnapshot: Record<string, unknown> | null;
 }
