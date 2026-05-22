@@ -27,7 +27,7 @@ export class GeminiAdapter implements BaseLLM {
     options: StreamOptions,
     resolveMeta: (meta: AdapterMeta) => void,
   ): AsyncIterable<string> {
-    const { model = 'gemini-1.5-flash', temperature, maxTokens } = options;
+    const { model = 'gemini-2.0-flash', temperature, maxTokens } = options;
     let inputTokens: number | null = null;
     let outputTokens: number | null = null;
 

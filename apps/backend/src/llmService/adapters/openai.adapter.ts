@@ -27,7 +27,7 @@ export class OpenAIAdapter implements BaseLLM {
     options: StreamOptions,
     resolveMeta: (meta: AdapterMeta) => void,
   ): AsyncIterable<string> {
-    const { model = 'gpt-4o-mini', temperature, maxTokens } = options;
+    const { model = 'gpt-4.1', temperature, maxTokens } = options;
     let inputTokens: number | null = null;
     let outputTokens: number | null = null;
 

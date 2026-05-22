@@ -40,8 +40,8 @@ export function NewChatPage({ onSessionCreated }: NewChatPageProps) {
             value={provider}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setProvider(e.target.value as LLMProvider)}
             options={[
-              { value: 'openai', label: 'OpenAI (GPT-4o mini)' },
-              { value: 'gemini', label: 'Gemini 1.5 Flash' },
+              { value: 'openai', label: 'OpenAI (GPT-4.1)' },
+              { value: 'gemini', label: 'Gemini 2.0 Flash' },
             ]}
             className="w-52"
           />
