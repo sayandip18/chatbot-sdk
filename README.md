@@ -219,4 +219,8 @@ Every LLM turn is automatically logged to the `llm_insights` table — no extra 
 
 4. The async consistency issue: The primary chat flow and the observability flow have no transaction synchronization. This introduces a few classic distributed systems problems. What happens if the user gets their response and it updates the primary DB, but code crashes right before firing the payload? The user has a flawless experience, but analytics engine has absolutely zero record of the interaction. Fix: using Outbox pattern.
 
-5. Some know FE bugs: mostly caching issues. I am aware of them and not fixed them just to ensure quickness of submission.
+5. Inference logs are stored in Postgres for simplicity. At production scale (>1M requests/day), this table would be migrated to ClickHouse or TimescaleDB due to write throughput requirements and the analytical query patterns (percentile aggregations over time windows) that columnar storage handles more efficiently.
+
+6. Some know FE bugs: mostly caching issues. I am aware of them and not fixed them just to ensure quickness of submission.
+
+7. There are certain instances of me ignoring the N+1 query problem just to prioritize speed of development.
