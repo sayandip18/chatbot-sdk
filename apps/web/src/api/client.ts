@@ -1,4 +1,4 @@
-import type { ISession, IMessage, LLMProvider, SSEChunkEvent, SSEDoneEvent, SSEErrorEvent } from '@app/types';
+import type { ISession, IMessage, LLMProvider, PatchSessionDto, SSEChunkEvent, SSEDoneEvent, SSEErrorEvent } from '@app/types';
 
 const BASE = '/api';
 
@@ -17,6 +17,10 @@ export function getSessions(): Promise<ISession[]> {
 
 export function createSession(provider: LLMProvider): Promise<ISession> {
   return request('/sessions', { method: 'POST', body: JSON.stringify({ provider }) });
+}
+
+export function patchSession(sessionId: string, dto: PatchSessionDto): Promise<ISession> {
+  return request(`/sessions/${sessionId}`, { method: 'PATCH', body: JSON.stringify(dto) });
 }
 
 export function getMessages(sessionId: string): Promise<IMessage[]> {

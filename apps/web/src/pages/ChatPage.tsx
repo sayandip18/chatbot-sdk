@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { Ellipsis, Trash2 } from 'lucide-react';
+import { Ellipsis, Ban, RotateCcw } from 'lucide-react';
 import {
   InfoCard,
   Button,
@@ -15,6 +15,7 @@ import { useChat } from '../hooks/useChat';
 import { MessageList } from '../components/MessageList';
 import { MessageInput } from '../components/MessageInput';
 import type { SessionWithLabel } from '../hooks/useSessions';
+import { patchSession } from '../api/client';
 
 interface ChatPageProps {
   onSessionsChange: () => void;
@@ -27,6 +28,7 @@ export function ChatPage({ onSessionsChange, sessions }: ChatPageProps) {
   const { messages, streaming, error, send } = useChat(sessionId ?? null);
 
   const currentSession = sessions?.find((s) => s.id === sessionId);
+  const isCancelled = currentSession?.isCancelled ?? false;
 
   useEffect(() => {
     const firstMessage = location.state?.firstMessage as string | undefined;
@@ -42,15 +44,30 @@ export function ChatPage({ onSessionsChange, sessions }: ChatPageProps) {
     onSessionsChange();
   };
 
+  const handleToggleCancel = useCallback(async () => {
+    if (!sessionId) return;
+    await patchSession(sessionId, { isCancelled: !isCancelled });
+    onSessionsChange();
+  }, [sessionId, isCancelled, onSessionsChange]);
+
   const topRightIcon = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button Icon={Ellipsis} variant="outline" className="h-10 w-10" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem>
-          <Trash2 className="w-4 h-4" />
-          <BodySmRegular20>Delete</BodySmRegular20>
+        <DropdownMenuItem onClick={handleToggleCancel}>
+          {isCancelled ? (
+            <>
+              <RotateCcw className="w-4 h-4" />
+              <BodySmRegular20>Resume</BodySmRegular20>
+            </>
+          ) : (
+            <>
+              <Ban className="w-4 h-4" />
+              <BodySmRegular20>Cancel</BodySmRegular20>
+            </>
+          )}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -74,7 +91,11 @@ export function ChatPage({ onSessionsChange, sessions }: ChatPageProps) {
         <BodySmRegular20 className="text-red-500 text-center py-2">{error}</BodySmRegular20>
       )}
 
-      <MessageInput onSend={handleSend} disabled={streaming} />
+      <MessageInput
+        onSend={handleSend}
+        disabled={streaming || isCancelled}
+        placeholder={isCancelled ? 'Conversation cancelled' : 'Enter your query'}
+      />
     </InfoCard>
   );
 }

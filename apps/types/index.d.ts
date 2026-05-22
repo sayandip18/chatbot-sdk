@@ -4,8 +4,13 @@ export type MessageRole = 'user' | 'system' | 'llm';
 export interface ISession {
   id: string;
   provider: LLMProvider;
+  isCancelled: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface PatchSessionDto {
+  isCancelled: boolean;
 }
 
 export interface IMessage {

@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { Session } from '../entities/session.entity';
@@ -11,6 +11,7 @@ import type {
   CreateSessionDto,
   IMessage,
   ISession,
+  PatchSessionDto,
   PostChatDto,
 } from '@app/types';
 
@@ -45,6 +46,7 @@ export class ChatService {
     return {
       id: saved.id,
       provider: saved.provider,
+      isCancelled: saved.isCancelled,
       createdAt: saved.createdAt,
       updatedAt: saved.updatedAt,
     };
@@ -57,9 +59,23 @@ export class ChatService {
     return sessions.map((s) => ({
       id: s.id,
       provider: s.provider,
+      isCancelled: s.isCancelled,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
     }));
+  }
+
+  async patchSession(sessionId: string, dto: PatchSessionDto): Promise<ISession> {
+    const session = await this.validateSession(sessionId);
+    session.isCancelled = dto.isCancelled;
+    const saved = await this.sessionRepository.save(session);
+    return {
+      id: saved.id,
+      provider: saved.provider,
+      isCancelled: saved.isCancelled,
+      createdAt: saved.createdAt,
+      updatedAt: saved.updatedAt,
+    };
   }
 
   async validateSession(sessionId: string): Promise<Session> {
@@ -89,6 +105,9 @@ export class ChatService {
   }
 
   async *streamChat(dto: PostChatDto, session: Session): AsyncIterable<string> {
+    if (session.isCancelled) {
+      throw new ForbiddenException('Session is cancelled');
+    }
     // 1. Save user message as pending and publish to PII pipeline
     const userMsg = await this.messageRepository.save(
       this.messageRepository.create({

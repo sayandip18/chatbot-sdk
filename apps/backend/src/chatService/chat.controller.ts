@@ -6,6 +6,7 @@ import {
   HttpStatus,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Res,
 } from '@nestjs/common';
@@ -14,6 +15,7 @@ import type {
   CreateSessionDto,
   IMessage,
   ISession,
+  PatchSessionDto,
   PostChatDto,
   SSEEvent,
 } from '@app/types';
@@ -34,6 +36,14 @@ export class ChatController {
     return this.chatService.getAllSessions();
   }
 
+  @Patch('sessions/:sessionId')
+  patchSession(
+    @Param('sessionId') sessionId: string,
+    @Body() dto: PatchSessionDto,
+  ): Promise<ISession> {
+    return this.chatService.patchSession(sessionId, dto);
+  }
+
   @Get('chat/:sessionId')
   getChatHistory(@Param('sessionId') sessionId: string): Promise<IMessage[]> {
     return this.chatService.getChatHistory(sessionId);
@@ -52,6 +62,11 @@ export class ChatController {
       res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ message: 'Internal server error' });
+      return;
+    }
+
+    if (session.isCancelled) {
+      res.status(HttpStatus.FORBIDDEN).json({ message: 'Session is cancelled' });
       return;
     }
 

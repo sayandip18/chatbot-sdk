@@ -17,6 +17,9 @@ export class Session {
   @Column({ type: 'varchar', length: 20 })
   provider: LLMProvider;
 
+  @Column({ type: 'boolean', default: false, name: 'is_cancelled' })
+  isCancelled: boolean;
+
   @OneToMany(() => Message, (message) => message.session)
   messages: Message[];
 
