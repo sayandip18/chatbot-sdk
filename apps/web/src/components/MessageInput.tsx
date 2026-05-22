@@ -5,10 +5,11 @@ import { Button, Input } from '@app/ui';
 interface MessageInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
+  loading?: boolean;
   placeholder?: string;
 }
 
-export function MessageInput({ onSend, disabled = false, placeholder = 'Enter your query' }: MessageInputProps) {
+export function MessageInput({ onSend, disabled = false, loading = false, placeholder = 'Enter your query' }: MessageInputProps) {
   const [value, setValue] = useState('');
 
   const submit = () => {
@@ -36,14 +37,16 @@ export function MessageInput({ onSend, disabled = false, placeholder = 'Enter yo
         placeholder={placeholder}
         disabled={disabled}
       />
-      <Button
-        loading={disabled}
-        Icon={Send}
-        variant="outline"
-        className="h-10 w-10 shrink-0"
-        onClick={submit}
-        disabled={!value.trim() || disabled}
-      />
+      {!disabled || loading ? (
+        <Button
+          loading={loading}
+          Icon={Send}
+          variant="outline"
+          className="h-10 w-10 shrink-0"
+          onClick={submit}
+          disabled={!value.trim() || disabled}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,9 @@
 import { randomUUID } from 'crypto';
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { Session } from '../entities/session.entity';
@@ -65,7 +69,10 @@ export class ChatService {
     }));
   }
 
-  async patchSession(sessionId: string, dto: PatchSessionDto): Promise<ISession> {
+  async patchSession(
+    sessionId: string,
+    dto: PatchSessionDto,
+  ): Promise<ISession> {
     const session = await this.validateSession(sessionId);
     session.isCancelled = dto.isCancelled;
     const saved = await this.sessionRepository.save(session);
@@ -167,7 +174,9 @@ export class ChatService {
     };
 
     // 3. Stream — ingestionService will publish the LLM event with full content on success.
-    //    PII redactor owns the final content write; we do NOT update the message here.
+    //    PII redactor owns the final content write; we eagerly write raw content here so the
+    //    row is readable immediately, before the async pipeline completes.
+    let fullContent = '';
     try {
       for await (const chunk of this.llmService.stream(
         session.provider,
@@ -175,8 +184,12 @@ export class ChatService {
         undefined,
         ingestionContext,
       )) {
+        fullContent += chunk;
         yield chunk;
       }
+      await this.messageRepository.update(assistantMessageId, {
+        content: fullContent,
+      });
     } catch (error) {
       // Clean up orphaned placeholder on stream failure
       await this.messageRepository.delete(assistantMessageId);

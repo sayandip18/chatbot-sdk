@@ -44,6 +44,7 @@ export function useChat(sessionId: string | null) {
       setPendingMessages([userMsg, placeholderMsg]);
       setStreaming(true);
 
+      let succeeded = false;
       try {
         for await (const chunk of streamChat(sessionId, content)) {
           if (abortRef.current) break;
@@ -54,15 +55,16 @@ export function useChat(sessionId: string | null) {
             return copy;
           });
         }
-        await queryClient.invalidateQueries({
-          queryKey: ["messages", sessionId],
-        });
-        await queryClient.invalidateQueries({ queryKey: ["sessions"] });
+        succeeded = true;
       } catch (e) {
         setError(e instanceof Error ? e.message : "Unknown error");
       } finally {
         setPendingMessages([]);
         setStreaming(false);
+      }
+      if (succeeded) {
+        void queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
+        void queryClient.invalidateQueries({ queryKey: ["sessions"] });
       }
     },
     [sessionId, streaming, queryClient],

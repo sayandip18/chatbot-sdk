@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Ellipsis, Ban, RotateCcw } from 'lucide-react';
 import {
@@ -30,9 +30,11 @@ export function ChatPage({ onSessionsChange, sessions }: ChatPageProps) {
   const currentSession = sessions?.find((s) => s.id === sessionId);
   const isCancelled = currentSession?.isCancelled ?? false;
 
+  const firstMessageSent = useRef(false);
   useEffect(() => {
     const firstMessage = location.state?.firstMessage as string | undefined;
-    if (firstMessage && sessionId && messages.length === 0) {
+    if (firstMessage && sessionId && !firstMessageSent.current) {
+      firstMessageSent.current = true;
       send(firstMessage).then(() => onSessionsChange());
       window.history.replaceState({}, '');
     }
@@ -93,6 +95,7 @@ export function ChatPage({ onSessionsChange, sessions }: ChatPageProps) {
 
       <MessageInput
         onSend={handleSend}
+        loading={streaming}
         disabled={streaming || isCancelled}
         placeholder={isCancelled ? 'Conversation cancelled' : 'Enter your query'}
       />

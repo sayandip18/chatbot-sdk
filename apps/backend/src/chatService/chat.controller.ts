@@ -66,7 +66,9 @@ export class ChatController {
     }
 
     if (session.isCancelled) {
-      res.status(HttpStatus.FORBIDDEN).json({ message: 'Session is cancelled' });
+      res
+        .status(HttpStatus.FORBIDDEN)
+        .json({ message: 'Session is cancelled' });
       return;
     }
 
